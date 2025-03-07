@@ -169,20 +169,20 @@
 
     <script>
         const words = [
-            { word: "chula", desc: "A term of endearment meaning 'cute' in Spanish" },
-            { word: "coffee", desc: "A warm, energizing drink" },
-            { word: "wine", desc: "A rich drink from grapes" },
-            { word: "puddin", desc: "A sweet, creamy dessert" },
-            { word: "flower", desc: "A beautiful bloom" },
-            { word: "egg", desc: "A versatile food" },
-            { word: "sleep", desc: "A restful state" },
-            { word: "butterfly", desc: "A colorful insect" },
+            { word: "chula", desc: "Term of endearment meaning 'cute' in Spanish" },
+            { word: "coffee", desc: "Warm, energizing drink" },
+            { word: "wine", desc: "Rich drink from grapes" },
+            { word: "puddin", desc: "Sweet, creamy dessert" },
+            { word: "flower", desc: "Beautiful bloom" },
+            { word: "egg", desc: "Versatile food" },
+            { word: "sleep", desc: "Restful state" },
+            { word: "butterfly", desc: "Colorful insect" },
             { word: "moon", desc: "Earth's night companion" },
-            { word: "petrichor", desc: "The scent after rain" },
+            { word: "petrichor", desc: "Scent after rain" },
             { word: "besties", desc: "Close companions" },
-            { word: "teddy", desc: "A cuddly bear toy" },
-            { word: "tiramasu", desc: "An Italian dessert" },
-            { word: "loskop", desc: "A term for a scatterbrain" }
+            { word: "teddy", desc: "Cuddly bear toy" },
+            { word: "tiramasu", desc: "Italian dessert" },
+            { word: "loskop", desc: "Term for a scatterbrain" }
         ];
 
         const gridSize = 15;
@@ -308,7 +308,8 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.disabled = true;
-                li.innerHTML = `<span>${word}: ${desc}</span>`;
+                li.innerHTML = `<span>${desc}</span>`; // Only description, no word
+                li.dataset.word = word; // Store word in dataset for checking
                 li.prepend(checkbox);
                 wordListEl.appendChild(li);
             });
@@ -433,7 +434,7 @@
                     const wordItem = words.find(w => w.word === substring || w.word === reverseSubstring);
                     if (wordItem && !foundWords.has(wordItem.word)) {
                         foundWords.add(wordItem.word);
-                        const li = [...wordListEl.children].find(item => item.textContent.includes(wordItem.word));
+                        const li = [...wordListEl.children].find(item => item.dataset.word === wordItem.word);
                         if (li && !li.classList.contains('found')) {
                             li.classList.add('found');
                             li.querySelector('input').checked = true;
