@@ -125,12 +125,6 @@
         .celebration.show {
             display: flex;
         }
-        .celebration span {
-            background: linear-gradient(45deg, #800080, #ff00ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
         @keyframes fadeInBounce {
             0% { opacity: 0; transform: translateY(-20px); }
             50% { opacity: 1; transform: translateY(10px); }
@@ -187,7 +181,7 @@
             { word: "petrichor", desc: "a scent perfect for twilight??" },
             { word: "besties", desc: "youu & ii" },
             { word: "teddy", desc: "a friend..:)" },
-            { word: "tiramisu", desc: "something yummy" },
+            { word: "tiramasu", desc: "something yummy" },
             { word: "loskop", desc: "our place, ii think??" }
         ];
 
@@ -314,8 +308,8 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.disabled = true;
-                li.innerHTML = `<span>${desc}</span>`;
-                li.dataset.word = word;
+                li.innerHTML = `<span>${desc}</span>`; // Only description, no word
+                li.dataset.word = word; // Store word in dataset for checking
                 li.prepend(checkbox);
                 wordListEl.appendChild(li);
             });
