@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Word Search Challenge</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #000000;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            -webkit-text-size-adjust: 100%; /* Prevent text scaling issues */
+        }
+        .title {
+            font-size: 1.8em; /* Smaller for mobile */
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        .subtitle {
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #cccccc;
+        }
+        .container {
+            display: flex;
+            flex-direction: column; /* Stack vertically on small screens */
+            gap: 10px;
+            padding: 10px;
+            background-color: #1a1a1a;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 720px; /* Match A12 resolution */
+        }
+        .word-list {
+            width: 100%;
+            background-color: #2c2c2c;
+            padding: 10px;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .word-list h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+            color: #ffffff;
+        }
+        .word-list ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .word-list li {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            color: #ffffff;
+            font-size: 0.85em; /* Smaller text for readability */
+        }
+        .word-list li.found {
+            text-decoration: line-through;
+            color: #888888;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr); /* Reduced to 15x15 for performance */
+            gap: 1px;
+            background-color: #cccccc;
+            padding: 5px;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 100%; /* Fit screen */
+            box-sizing: border-box;
+            touch-action: none; /* Improve touch responsiveness */
+        }
+        .cell {
+            aspect-ratio: 1 / 1; /* Square cells */
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.9em; /* Adjusted for visibility */
+            cursor: pointer;
+            user-select: none;
+            color: #000000;
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on Android */
+        }
+        .cell.found {
+            background: linear-gradient(45deg, #800080, #ff00ff);
+            color: #ffffff;
+        }
+        .cell.selected {
+            background: linear-gradient(45deg, #800080, #ff00ff);
+            color: #ffffff;
+        }
+        @media (min-width: 720px) { /* Adjust for larger screens */
+            .container {
+                flex-direction: row;
+                padding: 20px;
+            }
+            .word-list {
+                width: 300px;
+            }
+            .grid {
+                grid-template-columns: repeat(15, 25px);
+            }
+            .cell {
+                width: 25px;
+                height: 25px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="title">Word Search Challenge</div>
+    <div class="subtitle">Drag to find hidden words using the clues!</div>
+    <div class="container">
+        <div class="word-list">
+            <h2>Words to Find</h2>
+            <ul id="wordList"></ul>
+        </div>
+        <div class="grid" id="grid"></div>
+    </div>
+
+    <script>
+        const words = [
+            { word: "chula", desc: "A term of endearment meaning 'cute' in Spanish" },
+            { word: "coffee", desc: "A warm, energizing drink" },
+            { word: "wine", desc: "A rich drink from grapes" },
+            { word: "puddin", desc: "A sweet, creamy dessert" },
+            { word: "flower", desc: "A beautiful bloom" },
+            { word: "egg", desc: "A versatile food" },
+            { word: "sleep", desc: "A restful state" },
+            { word: "butterfly", desc: "A colorful insect" },
+            { word: "moon", desc: "Earth's night companion" },
+            { word: "petrichor", desc: "The scent after rain" },
+            { word: "bestfriends", desc: "Close companions" },
+            { word: "dagger", desc: "A sharp weapon" },
+            { word: "tiramasu", desc: "An Italian dessert" },
+            { word: "loskop", desc: "A term for a scatterbrain" }
+        ];
+
+        const gridSize = 15; // Reduced from 20 for performance
+        const grid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
+        const gridEl = document.getElementById('grid');
+        const wordListEl = document.getElementById('wordList');
+
+        function placeWords() {
+            const directions = [
+                [0, 1], [1, 0], [1, 1], [-1, -1],
+                [1, -1], [-1, 1], [0, -1], [-1, 0]
+            ];
+            const horizontalWords = ["chula", "coffee", "wine", "egg"];
+            words.forEach(({ word }) => {
+                let placed = false;
+                let attempts = 0;
+                while (!placed && attempts < 50) { // Limit attempts to prevent freezes
+                    const dir = horizontalWords.includes(word) 
+                        ? (Math.random() < 0.5 ? [0, 1] : [0, -1]) 
+                        : directions[Math.floor(Math.random() * directions.length)];
+                    const row = Math.floor(Math.random() * gridSize);
+                    const col = Math.floor(Math.random() * gridSize);
+                    if (canPlaceWord(word, row, col, dir)) {
+                        placeWord(word, row, col, dir);
+                        placed = true;
+                    }
+                    attempts++;
+                }
+            });
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    if (!grid[i][j]) grid[i][j] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+                }
+            }
+        }
+
+        function canPlaceWord(word, row, col, [dr, dc]) {
+            for (let i = 0; i < word.length; i++) {
+                const r = row + i * dr;
+                const c = col + i * dc;
+                if (r < 0 || r >= gridSize || c < 0 || c >= gridSize || (grid[r][c] && grid[r][c] !== word[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function placeWord(word, row, col, [dr, dc]) {
+            for (let i = 0; i < word.length; i++) {
+                const r = row + i * dr;
+                const c = col + i * dc;
+                grid[r][c] = word[i].toUpperCase();
+            }
+        }
+
+        function renderGrid() {
+            gridEl.innerHTML = '';
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.textContent = grid[i][j];
+                    gridEl.appendChild(cell);
+                }
+            }
+        }
+
+        function renderWordList() {
+            wordListEl.innerHTML = '';
+            words.forEach(({ word, desc }) => {
+                const li = document.createElement('li');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.disabled = true;
+                li.innerHTML = `<span>${word}: ${desc}</span>`;
+                li.prepend(checkbox);
+                wordListEl.appendChild(li);
+            });
+        }
+
+        let isDragging = false;
+        let startCell = null;
+        let selectedCells = [];
+
+        gridEl.addEventListener('touchstart', startDrag, { passive: false });
+        gridEl.addEventListener('touchmove', drag, { passive: false });
+        gridEl.addEventListener('touchend', endDrag);
+        gridEl.addEventListener('mousedown', startDrag);
+        gridEl.addEventListener('mousemove', drag);
+        gridEl.addEventListener('mouseup', endDrag);
+
+        function startDrag(e) {
+            e.preventDefault();
+            isDragging = true;
+            const cell = e.target.closest('.cell') || getCellFromTouch(e);
+            if (cell) {
+                startCell = cell;
+                selectedCells = [cell];
+                cell.classList.add('selected');
+            }
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const cell = e.target.closest('.cell') || getCellFromTouch(e);
+            if (cell && !selectedCells.includes(cell)) {
+                const startRow = parseInt(startCell.dataset.row);
+                const startCol = parseInt(startCell.dataset.col);
+                const endRow = parseInt(cell.dataset.row);
+                const endCol = parseInt(cell.dataset.col);
+
+                const dr = endRow - startRow;
+                const dc = endCol - startCol;
+                const len = Math.max(Math.abs(dr), Math.abs(dc)) + 1;
+
+                selectedCells.forEach(c => c.classList.remove('selected'));
+                selectedCells = [];
+
+                if (Math.abs(dr) > Math.abs(dc)) {
+                    const step = dr > 0 ? 1 : -1;
+                    for (let i = 0; i < len; i++) {
+                        const r = startRow + i * step;
+                        const c = startCol;
+                        addSelectedCell(r, c);
+                    }
+                } else if (Math.abs(dc) > Math.abs(dr)) {
+                    const step = dc > 0 ? 1 : -1;
+                    for (let i = 0; i < len; i++) {
+                        const r = startRow;
+                        const c = startCol + i * step;
+                        addSelectedCell(r, c);
+                    }
+                } else if (dr !== 0 && dc !== 0) {
+                    const stepR = dr > 0 ? 1 : -1;
+                    const stepC = dc > 0 ? 1 : -1;
+                    for (let i = 0; i < len; i++) {
+                        const r = startRow + i * stepR;
+                        const c = startCol + i * stepC;
+                        addSelectedCell(r, c);
+                    }
+                }
+            }
+        }
+
+        function addSelectedCell(r, c) {
+            const selCell = gridEl.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+            if (selCell) {
+                selCell.classList.add('selected');
+                selectedCells.push(selCell);
+            }
+        }
+
+        function getCellFromTouch(e) {
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            return element ? element.closest('.cell') : null;
+        }
+
+        function endDrag() {
+            if (!isDragging) return;
+            isDragging = false;
+            const selectedText = selectedCells.map(cell => cell.textContent).join('').toLowerCase();
+            const reverseText = selectedCells.map(cell => cell.textContent).reverse().join('').toLowerCase();
+
+            let foundWords = new Set();
+            for (let i = 1; i <= selectedText.length; i++) {
+                for (let j = 0; j <= selectedText.length - i; j++) {
+                    const substring = selectedText.substr(j, i);
+                    const reverseSubstring = reverseText.substr(j, i);
+                    const wordItem = words.find(w => w.word === substring || w.word === reverseSubstring);
+                    if (wordItem && !foundWords.has(wordItem.word)) {
+                        foundWords.add(wordItem.word);
+                        const li = [...wordListEl.children].find(item => item.textContent.includes(wordItem.word));
+                        if (li && !li.classList.contains('found')) {
+                            li.classList.add('found');
+                            li.querySelector('input').checked = true;
+                            const wordLength = wordItem.word.length;
+                            const startIndex = j;
+                            const endIndex = startIndex + wordLength - 1;
+                            for (let k = startIndex; k <= endIndex && k < selectedCells.length; k++) {
+                                selectedCells[k].classList.add('found');
+                                selectedCells[k].classList.remove('selected');
+                            }
+                        }
+                    }
+                }
+            }
+
+            selectedCells.forEach(cell => {
+                if (!cell.classList.contains('found')) {
+                    cell.classList.remove('selected');
+                }
+            });
+            selectedCells = [];
+        }
+
+        placeWords();
+        renderGrid();
+        renderWordList();
+    </script>
+</body>
+</html>
