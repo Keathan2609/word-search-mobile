@@ -17,7 +17,7 @@
             min-height: 100vh;
             overflow-x: hidden;
             -webkit-text-size-adjust: 100%;
-            touch-action: manipulation; /* Optimize for touch */
+            touch-action: manipulation;
         }
         .title {
             font-size: 1.8em;
@@ -158,7 +158,22 @@
                 [1, -1], [-1, 1], [0, -1], [-1, 0]
             ];
             const horizontalWords = ["chula", "coffee", "wine", "egg"];
-            words.forEach(({ word }) => {
+
+            // Place "bestfriends" first to ensure it fits
+            const bestFriends = words.find(w => w.word === "bestfriends");
+            let placedBestFriends = false;
+            while (!placedBestFriends) {
+                const dir = directions[Math.floor(Math.random() * directions.length)];
+                const row = Math.floor(Math.random() * gridSize);
+                const col = Math.floor(Math.random() * gridSize);
+                if (canPlaceWord(bestFriends.word, row, col, dir)) {
+                    placeWord(bestFriends.word, row, col, dir);
+                    placedBestFriends = true;
+                }
+            }
+
+            // Place remaining words
+            words.filter(w => w.word !== "bestfriends").forEach(({ word }) => {
                 let placed = false;
                 let attempts = 0;
                 while (!placed && attempts < 50) {
@@ -174,6 +189,8 @@
                     attempts++;
                 }
             });
+
+            // Fill empty cells
             for (let i = 0; i < gridSize; i++) {
                 for (let j = 0; j < gridSize; j++) {
                     if (!grid[i][j]) grid[i][j] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
@@ -230,7 +247,7 @@
         let isDragging = false;
         let startCell = null;
         let selectedCells = [];
-        let touchId = null; // Track specific touch for multi-touch devices
+        let touchId = null;
 
         gridEl.addEventListener('touchstart', startDrag, { passive: false });
         gridEl.addEventListener('touchmove', drag, { passive: false });
@@ -260,7 +277,7 @@
             const cell = getCellFromEvent(e);
             if (cell) {
                 if (e.type === 'touchstart') {
-                    touchId = e.touches[0].identifier; // Lock to first touch
+                    touchId = e.touches[0].identifier;
                 }
                 startCell = cell;
                 selectedCells = [cell];
@@ -278,31 +295,28 @@
                 const endRow = parseInt(cell.dataset.row);
                 const endCol = parseInt(cell.dataset.col);
 
-                // Determine direction and length
                 const dr = endRow - startRow;
                 const dc = endCol - startCol;
                 const len = Math.max(Math.abs(dr), Math.abs(dc)) + 1;
 
-                // Clear previous selection
                 selectedCells.forEach(c => c.classList.remove('selected'));
                 selectedCells = [];
 
-                // Select cells based on dominant direction
-                if (Math.abs(dr) > Math.abs(dc)) { // Vertical
+                if (Math.abs(dr) > Math.abs(dc)) {
                     const step = dr > 0 ? 1 : -1;
                     for (let i = 0; i < len; i++) {
                         const r = startRow + i * step;
                         const c = startCol;
                         addSelectedCell(r, c);
                     }
-                } else if (Math.abs(dc) > Math.abs(dr)) { // Horizontal
+                } else if (Math.abs(dc) > Math.abs(dr)) {
                     const step = dc > 0 ? 1 : -1;
                     for (let i = 0; i < len; i++) {
                         const r = startRow;
                         const c = startCol + i * step;
                         addSelectedCell(r, c);
                     }
-                } else if (dr !== 0 && dc !== 0) { // Diagonal
+                } else if (dr !== 0 && dc !== 0) {
                     const stepR = dr > 0 ? 1 : -1;
                     const stepC = dc > 0 ? 1 : -1;
                     for (let i = 0; i < len; i++) {
@@ -325,7 +339,7 @@
         function endDrag(e) {
             if (!isDragging) return;
             isDragging = false;
-            touchId = null; // Reset touch tracking
+            touchId = null;
             const selectedText = selectedCells.map(cell => cell.textContent).join('').toLowerCase();
             const reverseText = selectedCells.map(cell => cell.textContent).reverse().join('').toLowerCase();
 
@@ -361,9 +375,16 @@
             selectedCells = [];
         }
 
+        // Debugging: Log grid to console to verify "bestfriends" placement
+        function logGrid() {
+            console.log("Grid contents:");
+            grid.forEach(row => console.log(row.join(' ')));
+        }
+
         placeWords();
         renderGrid();
         renderWordList();
+        logGrid(); // Check console to see the grid
     </script>
 </body>
 </html>
